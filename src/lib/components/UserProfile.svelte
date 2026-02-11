@@ -5,10 +5,12 @@
 	    import { browser } from "$app/environment";
     import { Loader2 } from "lucide-svelte";
     import { goto } from "$app/navigation";
-	    import type { AuthUser } from "$lib/stores/auth";
-	    import { authLoaded, clearAuthState, currentUser } from "$lib/stores/auth";
-
-	    type UserInfo = AuthUser;
+	    import {
+	        type AuthUser,
+	        getAuthLoaded,
+	        getCurrentUser,
+	        clearAuthState,
+	    } from "$lib/stores/auth.svelte";
 
     interface Props {
         mini?: boolean;
@@ -16,12 +18,12 @@
 
     let { mini = false }: Props = $props();
 
-	    let userInfo = $derived($currentUser as UserInfo | null);
-	    let loading = $derived(!$authLoaded);
+	    let userInfo = $derived(getCurrentUser());
+	    let loading = $derived(!getAuthLoaded());
     let error = $state<string | null>(null);
 
 	    $effect(() => {
-	        if (browser && $authLoaded && !$currentUser) {
+	        if (browser && getAuthLoaded() && !getCurrentUser()) {
 	            goto("/sign-in");
 	        }
 	    });

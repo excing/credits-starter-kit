@@ -1,8 +1,6 @@
-import { writable, get } from 'svelte/store';
 import { authClient } from '$lib/auth-client';
 
 export type AuthUser = {
-	// Minimal shape used across UI (keep flexible)
 	id: string;
 	name?: string | null;
 	email: string;
@@ -15,19 +13,27 @@ type SessionData = {
 	[key: string]: unknown;
 };
 
-const _user = writable<AuthUser | null>(null);
-const _loaded = writable(false);
-const _loading = writable(false);
+let _user = $state<AuthUser | null>(null);
+let _loaded = $state(false);
+let _loading = $state(false);
 
 let inFlight: Promise<AuthUser | null> | null = null;
 
-export const currentUser = { subscribe: _user.subscribe };
-export const authLoaded = { subscribe: _loaded.subscribe };
-export const authLoading = { subscribe: _loading.subscribe };
+export function getCurrentUser(): AuthUser | null {
+	return _user;
+}
+
+export function getAuthLoaded(): boolean {
+	return _loaded;
+}
+
+export function getAuthLoading(): boolean {
+	return _loading;
+}
 
 export function setCurrentUser(user: AuthUser | null) {
-	_user.set(user);
-	_loaded.set(true);
+	_user = user;
+	_loaded = true;
 }
 
 /**
@@ -36,44 +42,43 @@ export function setCurrentUser(user: AuthUser | null) {
  */
 export function initAuthFromLayout(session: unknown) {
 	const sessionUser = (session as SessionData | null)?.user ?? null;
-	const loaded = get(_loaded);
-	const existing = get(_user);
 
 	// First initialization: trust the server session.
-	if (!loaded) {
+	if (!_loaded) {
 		setCurrentUser(sessionUser);
 		return;
 	}
 
 	// If server says "no session", clear local user.
 	if (!sessionUser) {
-		if (existing) setCurrentUser(null);
-		else _loaded.set(true);
+		if (_user) setCurrentUser(null);
+		else _loaded = true;
 		return;
 	}
 
 	// If user changed (login as different user), replace.
-	if (!existing || existing.id !== sessionUser.id) {
+	if (!_user || _user.id !== sessionUser.id) {
 		setCurrentUser(sessionUser);
 		return;
 	}
 
 	// Same user: merge in a way that preserves local patches (existing wins).
-	_user.set({ ...sessionUser, ...existing });
-	_loaded.set(true);
+	_user = { ...sessionUser, ..._user };
+	_loaded = true;
 }
 
 export function patchCurrentUser(patch: Partial<AuthUser>) {
-	_user.update((u) => (u ? ({ ...u, ...patch } as AuthUser) : u));
+	if (_user) {
+		_user = { ..._user, ...patch } as AuthUser;
+	}
 }
 
 export function clearAuthState() {
-	// After sign-out we know the user is null
 	setCurrentUser(null);
 }
 
 export async function refreshCurrentUser(): Promise<AuthUser | null> {
-	_loading.set(true);
+	_loading = true;
 	try {
 		const result = await authClient.getSession();
 		const data = result as { data?: { user?: AuthUser | null } } | null;
@@ -82,16 +87,15 @@ export async function refreshCurrentUser(): Promise<AuthUser | null> {
 		return user;
 	} catch (err) {
 		console.error('Failed to refresh session:', err);
-		// Still mark as loaded to avoid infinite spinners
 		setCurrentUser(null);
 		return null;
 	} finally {
-		_loading.set(false);
+		_loading = false;
 	}
 }
 
 export async function ensureCurrentUserLoaded(): Promise<AuthUser | null> {
-	if (get(_loaded)) return get(_user);
+	if (_loaded) return _user;
 	if (inFlight) return inFlight;
 	inFlight = refreshCurrentUser().finally(() => {
 		inFlight = null;

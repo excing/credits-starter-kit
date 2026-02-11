@@ -1,10 +1,10 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
 	    import {
-	        authLoaded,
-	        currentUser,
+	        getAuthLoaded,
+	        getCurrentUser,
 	        ensureCurrentUserLoaded,
-	    } from "$lib/stores/auth";
+	    } from "$lib/stores/auth.svelte";
     import { goto } from "$app/navigation";
     import type { Snippet } from "svelte";
 
@@ -22,15 +22,14 @@
         [key: string]: any;
     }>();
 
-	    let isAuthenticated = $derived($authLoaded ? !!$currentUser : null);
+	    let isAuthenticated = $derived(getAuthLoaded() ? !!getCurrentUser() : null);
 
 	    async function handleClick(e: MouseEvent) {
-	        if (!$authLoaded) {
-	            // If the user clicks before layout data initializes, resolve once.
+	        if (!getAuthLoaded()) {
 	            await ensureCurrentUserLoaded();
 	        }
 
-	        if (!$currentUser) {
+	        if (!getCurrentUser()) {
             e.preventDefault();
             goto("/sign-in");
             return;
