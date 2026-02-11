@@ -1,5 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages } from 'ai';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
@@ -9,8 +10,24 @@ const openai = createOpenAI({
     apiKey: env.OPENAI_API_KEY,
 });
 
-export const POST: RequestHandler = async ({ request }) => {
-    const { messages } = await request.json();
+export const POST: RequestHandler = async ({ request, locals }) => {
+    // 认证检查：确保用户已登录
+    if (!locals.session?.user) {
+        return json({ error: '请先登录后再使用聊天功能' }, { status: 401 });
+    }
+
+    // 输入验证
+    let body: unknown;
+    try {
+        body = await request.json();
+    } catch {
+        return json({ error: '无效的请求格式' }, { status: 400 });
+    }
+
+    const { messages } = body as { messages?: unknown };
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return json({ error: '消息内容不能为空' }, { status: 400 });
+    }
 
     // 将 UI messages（包含 parts）转换为 core messages（包含 content）
     const modelMessages = await convertToModelMessages(messages);
@@ -18,6 +35,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const result = streamText({
         model: openai.chat('nvidia/kimi-k2-thinking'),
         messages: modelMessages,
+        maxOutputTokens: 4096,
     });
 
     return result.toUIMessageStreamResponse();

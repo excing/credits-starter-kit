@@ -10,6 +10,11 @@ export type AuthUser = {
 	[key: string]: unknown;
 };
 
+type SessionData = {
+	user?: AuthUser | null;
+	[key: string]: unknown;
+};
+
 const _user = writable<AuthUser | null>(null);
 const _loaded = writable(false);
 const _loading = writable(false);
@@ -30,7 +35,7 @@ export function setCurrentUser(user: AuthUser | null) {
  * `session` comes from `src/routes/+layout.server.ts`.
  */
 export function initAuthFromLayout(session: unknown) {
-	const sessionUser = (session as any)?.user ?? null;
+	const sessionUser = (session as SessionData | null)?.user ?? null;
 	const loaded = get(_loaded);
 	const existing = get(_user);
 
@@ -54,7 +59,7 @@ export function initAuthFromLayout(session: unknown) {
 	}
 
 	// Same user: merge in a way that preserves local patches (existing wins).
-	_user.set({ ...(sessionUser as any), ...(existing as any) });
+	_user.set({ ...sessionUser, ...existing });
 	_loaded.set(true);
 }
 
@@ -71,7 +76,8 @@ export async function refreshCurrentUser(): Promise<AuthUser | null> {
 	_loading.set(true);
 	try {
 		const result = await authClient.getSession();
-		const user = (result as any)?.data?.user ?? null;
+		const data = result as { data?: { user?: AuthUser | null } } | null;
+		const user = data?.data?.user ?? null;
 		setCurrentUser(user);
 		return user;
 	} catch (err) {

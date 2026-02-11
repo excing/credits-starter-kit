@@ -2,6 +2,7 @@ import {
     boolean,
     integer,
     bigint,
+    index,
     pgTable,
     text,
     timestamp
@@ -29,7 +30,9 @@ export const session = pgTable('session', {
     userId: text('userId')
         .notNull()
         .references(() => user.id, { onDelete: 'cascade' })
-});
+}, (table) => [
+    index('session_userId_idx').on(table.userId),
+]);
 
 export const account = pgTable('account', {
     id: text('id').primaryKey(),
@@ -47,7 +50,9 @@ export const account = pgTable('account', {
     password: text('password'),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow()
-});
+}, (table) => [
+    index('account_userId_idx').on(table.userId),
+]);
 
 export const verification = pgTable('verification', {
     id: text('id').primaryKey(),
@@ -63,4 +68,6 @@ export const rateLimit = pgTable("rate_limit", {
     key: text("key"),
     count: integer("count"),
     lastRequest: bigint("last_request", { mode: "number" }),
-});
+}, (table) => [
+    index('rate_limit_key_idx').on(table.key),
+]);

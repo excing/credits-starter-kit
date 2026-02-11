@@ -1,6 +1,16 @@
 import { uploadImageAssets } from '$lib/server/upload-image';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
+import { randomUUID } from 'crypto';
+
+// MIME 类型到合法扩展名的映射
+const mimeToExtensions: Record<string, string[]> = {
+    'image/jpeg': ['jpg', 'jpeg'],
+    'image/png': ['png'],
+    'image/gif': ['gif'],
+    'image/webp': ['webp'],
+};
+const allowedMimeTypes = Object.keys(mimeToExtensions);
 
 export const POST: RequestHandler = async ({ request, locals }) => {
     try {
@@ -16,18 +26,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             return json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // Validate MIME type - only allow image files
-        const allowedMimeTypes = [
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-            'image/svg+xml'
-        ];
-
+        // Validate MIME type - only allow safe image files (SVG excluded due to XSS risk)
         if (!allowedMimeTypes.includes(file.type)) {
-            return json({ error: 'Invalid file type. Only image files are allowed.' }, { status: 400 });
+            return json({ error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.' }, { status: 400 });
         }
 
         // Validate file size - limit to 10MB
@@ -40,10 +41,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // Generate a unique filename with original extension
-        const fileExt = file.name.split('.').pop() || '';
-        const timestamp = Date.now();
-        const filename = `upload-${timestamp}.${fileExt || 'png'}`;
+        // 验证文件扩展名与 MIME 类型匹配
+        const fileExt = (file.name.split('.').pop() || '').toLowerCase();
+        const validExts = mimeToExtensions[file.type];
+        const safeExt = validExts.includes(fileExt) ? fileExt : validExts[0];
+
+        // 使用 UUID 生成唯一文件名，防止碰撞
+        const filename = `upload-${Date.now()}-${randomUUID()}.${safeExt}`;
 
         // Upload the file
         const url = await uploadImageAssets(buffer, filename, file.type);

@@ -14,14 +14,22 @@
     let loading = $state(false);
     let email = $state("");
     let password = $state("");
-    const returnTo = $derived($page.url.searchParams.get("returnTo"));
+
+    // 验证 returnTo 是安全的相对路径，防止开放重定向攻击
+    function getSafeReturnTo(url: string | null): string {
+        if (!url) return "/dashboard";
+        if (url.startsWith("/") && !url.startsWith("//") && !url.includes("://")) return url;
+        return "/dashboard";
+    }
+
+    const returnTo = $derived(getSafeReturnTo($page.url.searchParams.get("returnTo")));
 
     async function handleGoogleSignIn() {
         loading = true;
         try {
             await authClient.signIn.social({
                 provider: "google",
-                callbackURL: returnTo || "/dashboard",
+                callbackURL: returnTo,
             });
         } catch (error) {
             loading = false;
@@ -41,7 +49,7 @@
             const result = await authClient.signIn.email({
                 email,
                 password,
-                callbackURL: returnTo || "/dashboard",
+                callbackURL: returnTo,
             });
             if (result.error) {
                 if (result.error.status === 403) {
@@ -68,7 +76,7 @@
                 }
                 loading = false;
             } else {
-                goto(returnTo || "/dashboard");
+                goto(returnTo);
             }
         } catch (error) {
             loading = false;

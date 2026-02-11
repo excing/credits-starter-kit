@@ -6,10 +6,31 @@ import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { Resend } from 'resend';
 
-const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID!;
-const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET!;
-const RESEND_API_KEY = env.RESEND_API_KEY!;
-const RESEND_FROM_EMAIL = env.RESEND_FROM_EMAIL || 'noreply@example.com';
+// HTML 转义，防止模板注入
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// 环境变量验证
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET;
+const RESEND_API_KEY = env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = env.RESEND_FROM_EMAIL;
+
+if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    throw new Error('Missing required environment variables: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
+}
+if (!RESEND_API_KEY) {
+    throw new Error('Missing required environment variable: RESEND_API_KEY');
+}
+if (!RESEND_FROM_EMAIL) {
+    throw new Error('Missing required environment variable: RESEND_FROM_EMAIL');
+}
 
 const APP_URL = publicEnv.PUBLIC_APP_URL ?? 'http://localhost:3000';
 
@@ -57,41 +78,39 @@ export const auth = betterAuth({
         maxPasswordLength: 128,
         requireEmailVerification: true,
         sendResetPassword: async ({ user, url }) => {
-            console.log('Sending reset password email to:', user.email);
             const result = await resend.emails.send({
                 from: RESEND_FROM_EMAIL,
                 to: user.email,
                 subject: '重置密码 - SvelteKit Starter Kit',
                 html: `
                     <h2>重置密码</h2>
-                    <p>您好 ${user.name}，</p>
+                    <p>您好 ${escapeHtml(user.name)}，</p>
                     <p>点击下面的链接重置您的密码：</p>
                     <a href="${url}" style="display:inline-block;padding:12px 24px;background:#0070f3;color:white;text-decoration:none;border-radius:6px;">重置密码</a>
                     <p>如果您没有请求重置密码，请忽略此邮件。</p>
                 `,
             });
             if (result.error) {
-                console.error('Failed to send reset password email:', result.error);
+                console.error('Failed to send reset password email');
                 throw new Error(result.error.message);
             }
         },
     },
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {
-            console.log('Sending verification email to:', user.email);
             const result = await resend.emails.send({
                 from: RESEND_FROM_EMAIL,
                 to: user.email,
                 subject: '验证您的邮箱 - SvelteKit Starter Kit',
                 html: `
                     <h2>验证邮箱</h2>
-                    <p>您好 ${user.name}，</p>
+                    <p>您好 ${escapeHtml(user.name)}，</p>
                     <p>点击下面的链接验证您的邮箱：</p>
                     <a href="${url}" style="display:inline-block;padding:12px 24px;background:#0070f3;color:white;text-decoration:none;border-radius:6px;">验证邮箱</a>
                 `,
             });
             if (result.error) {
-                console.error('Failed to send verification email:', result.error);
+                console.error('Failed to send verification email');
                 throw new Error(result.error.message);
             }
         },
