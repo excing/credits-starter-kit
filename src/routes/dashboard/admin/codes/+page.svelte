@@ -57,6 +57,14 @@
         }
     }
 
+    function getDefaultExpiresAt(): string {
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        // datetime-local 需要 YYYY-MM-DDTHH:mm 格式
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
     async function loadCodes() {
         loading = true;
         try {
@@ -78,8 +86,8 @@
     function openGenerateDialog() {
         genPackageId = "";
         genCount = "1";
-        genExpiresAt = "";
-        genMaxRedemptions = "";
+        genExpiresAt = getDefaultExpiresAt();
+        genMaxRedemptions = "1";
         generateOpen = true;
     }
 
@@ -397,7 +405,7 @@
                 />
             </div>
             <div class="space-y-2">
-                <Label for="gen-expires">过期时间（可选）</Label>
+                <Label for="gen-expires">过期时间（留空表示永不过期，默认30天）</Label>
                 <Input
                     id="gen-expires"
                     type="datetime-local"
@@ -406,7 +414,7 @@
                 />
             </div>
             <div class="space-y-2">
-                <Label for="gen-max">最大使用次数（可选，留空为不限）</Label>
+                <Label for="gen-max">最大使用次数（留空表示不限，默认1次）</Label>
                 <Input
                     id="gen-max"
                     type="number"

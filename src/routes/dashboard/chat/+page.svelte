@@ -3,8 +3,20 @@
     import { Input } from "$lib/components/ui/input";
     import { cn } from "$lib/utils";
     import { Chat } from "@ai-sdk/svelte";
+    import { fetchCreditBalance } from "$lib/stores/credits.svelte";
+    import { toast } from "svelte-sonner";
 
-    const chat = new Chat({});
+    const chat = new Chat({
+        onError: (error: Error) => {
+            if (error.message?.includes('402')) {
+                toast.error('积分余额不足，请先充值');
+            }
+            fetchCreditBalance();
+        },
+        onFinish: () => {
+            fetchCreditBalance();
+        },
+    });
 
     let input = $state("");
 

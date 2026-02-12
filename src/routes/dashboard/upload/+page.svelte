@@ -5,6 +5,7 @@
     import { Progress } from "$lib/components/ui/progress";
     import { Check, FileImage, Upload, X } from "lucide-svelte";
     import { toast } from "svelte-sonner";
+    import { fetchCreditBalance } from "$lib/stores/credits.svelte";
 
     interface UploadedFile {
         id: string;
@@ -74,6 +75,7 @@
 
                 uploadedFiles = [uploadedFile, ...uploadedFiles];
                 toast.success(`${file.name} uploaded successfully`);
+                fetchCreditBalance();
             } catch (error) {
                 console.error("Upload error:", error);
                 toast.error(`Failed to upload ${file.name}`);

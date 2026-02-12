@@ -31,7 +31,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     const { packageId, expiresAt, maxRedemptions, count } = body as {
-        packageId?: string; expiresAt?: string; maxRedemptions?: number; count?: number;
+        packageId?: string; expiresAt?: string | null; maxRedemptions?: number; count?: number;
     };
 
     if (!packageId) return json({ error: '请选择关联套餐' }, { status: 400 });
@@ -44,7 +44,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         return json({ error: '生成数量必须为1-100之间的整数' }, { status: 400 });
     }
 
-    if (expiresAt) {
+    // 默认过期时间：30天后；传空字符串或 null 表示永不过期
+    let resolvedExpiresAt: Date | null = null;
+    if (expiresAt === undefined) {
+        // 未传：使用默认 30 天
+        resolvedExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    } else if (expiresAt) {
+        // 传了具体值：校验
         const expDate = new Date(expiresAt);
         if (isNaN(expDate.getTime())) {
             return json({ error: '无效的过期时间' }, { status: 400 });
@@ -52,12 +58,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         if (expDate <= new Date()) {
             return json({ error: '过期时间必须在当前时间之后' }, { status: 400 });
         }
+        resolvedExpiresAt = expDate;
     }
+    // expiresAt 为 null 或空字符串：永不过期（resolvedExpiresAt 保持 null）
 
     const codes = await createCodes({
         packageId,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        maxRedemptions: maxRedemptions ?? null,
+        expiresAt: resolvedExpiresAt,
+        maxRedemptions: maxRedemptions ?? 1,
         count: count ?? 1,
     }, locals.session.user.id);
 
