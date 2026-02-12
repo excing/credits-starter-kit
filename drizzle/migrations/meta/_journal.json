@@ -8,6 +8,13 @@
       "when": 1770197722061,
       "tag": "0000_cold_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770860416776,
+      "tag": "0001_white_gauntlet",
+      "breakpoints": true
     }
   ]
 }

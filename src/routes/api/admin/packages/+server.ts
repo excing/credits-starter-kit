@@ -1,0 +1,43 @@
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { guardAdmin } from '$lib/server/credits/admin';
+import { createPackage, listPackages } from '$lib/server/credits/package-service';
+
+export const GET: RequestHandler = async ({ locals }) => {
+    if (!locals.session?.user) return json({ error: '请先登录' }, { status: 401 });
+    const denied = guardAdmin(locals.session.user.email);
+    if (denied) return denied;
+
+    const packages = await listPackages(true);
+    return json({ packages });
+};
+
+export const POST: RequestHandler = async ({ request, locals }) => {
+    if (!locals.session?.user) return json({ error: '请先登录' }, { status: 401 });
+    const denied = guardAdmin(locals.session.user.email);
+    if (denied) return denied;
+
+    let body: unknown;
+    try {
+        body = await request.json();
+    } catch {
+        return json({ error: '无效的请求格式' }, { status: 400 });
+    }
+
+    const { name, credits, description } = body as {
+        name?: string; credits?: number; description?: string;
+    };
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return json({ error: '套餐名称不能为空' }, { status: 400 });
+    }
+    if (!credits || typeof credits !== 'number' || credits <= 0 || !Number.isInteger(credits)) {
+        return json({ error: '积分数量必须为正整数' }, { status: 400 });
+    }
+
+    const pkg = await createPackage({
+        name: name.trim(),
+        credits,
+        description: description?.trim(),
+    });
+    return json({ package: pkg }, { status: 201 });
+};

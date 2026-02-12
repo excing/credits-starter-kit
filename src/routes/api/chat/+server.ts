@@ -32,10 +32,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     // 将 UI messages（包含 parts）转换为 core messages（包含 content）
     const modelMessages = await convertToModelMessages(messages);
 
+    // ── 计费集成：捕获 token 用量 ──
+    const billingCtx = locals.billingContext;
+
     const result = streamText({
-        model: openai.chat('nvidia/kimi-k2-thinking'),
+        model: openai.chat(env.OPENAI_MODEL),
         messages: modelMessages,
         maxOutputTokens: 4096,
+        onFinish: billingCtx
+            ? ({ usage }) => {
+                  billingCtx.usageData = usage;
+                  billingCtx.resolveUsageData();
+              }
+            : undefined,
     });
 
     return result.toUIMessageStreamResponse();

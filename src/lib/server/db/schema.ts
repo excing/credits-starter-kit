@@ -3,6 +3,7 @@ import {
     integer,
     bigint,
     index,
+    jsonb,
     pgTable,
     text,
     timestamp
@@ -15,6 +16,7 @@ export const user = pgTable('user', {
     email: text('email').notNull().unique(),
     emailVerified: boolean('emailVerified').notNull().default(false),
     image: text('image'),
+    creditBalance: integer('credit_balance').notNull().default(0),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow()
 });
@@ -70,4 +72,48 @@ export const rateLimit = pgTable("rate_limit", {
     lastRequest: bigint("last_request", { mode: "number" }),
 }, (table) => [
     index('rate_limit_key_idx').on(table.key),
+]);
+
+// Credits Module Tables
+
+export const creditPackage = pgTable('credit_package', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    credits: integer('credits').notNull(),
+    description: text('description'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const redemptionCode = pgTable('redemption_code', {
+    id: text('id').primaryKey(),
+    code: text('code').notNull().unique(),
+    packageId: text('package_id').notNull()
+        .references(() => creditPackage.id, { onDelete: 'restrict' }),
+    expiresAt: timestamp('expires_at'),
+    maxRedemptions: integer('max_redemptions'),
+    currentRedemptions: integer('current_redemptions').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: text('created_by')
+        .references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+    index('redemption_code_code_idx').on(table.code),
+    index('redemption_code_package_id_idx').on(table.packageId),
+]);
+
+export const creditTransaction = pgTable('credit_transaction', {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+        .references(() => user.id, { onDelete: 'set null' }),
+    amount: integer('amount').notNull(),
+    type: text('type').notNull(),
+    referenceId: text('reference_id'),
+    description: text('description'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+    index('credit_transaction_user_id_idx').on(table.userId),
+    index('credit_transaction_type_idx').on(table.type),
 ]);

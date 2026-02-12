@@ -3,12 +3,16 @@
     import * as Sheet from "$lib/components/ui/sheet";
     import { Separator } from "$lib/components/ui/separator";
     import UserProfile from "$lib/components/UserProfile.svelte";
+    import { getIsAdmin } from "$lib/stores/admin.svelte";
     import {
         Home,
         Brush,
         MonitorSmartphone,
         GitBranch,
         Menu,
+        Coins,
+        Package,
+        Ticket,
     } from "lucide-svelte";
 
     import type { Snippet } from "svelte";
@@ -19,6 +23,7 @@
 
     let { children }: Props = $props();
     let sheetOpen = $state(false);
+    let isAdmin = $derived(getIsAdmin());
 </script>
 
 <div class="flex flex-col">
@@ -39,7 +44,7 @@
                     <a href="/dashboard" onclick={() => (sheetOpen = false)}>
                         <Button variant="outline" class="w-full">
                             <Home class="mr-2 h-4 w-4" />
-                            Overview
+                            概览
                         </Button>
                     </a>
                     <a
@@ -57,9 +62,40 @@
                     >
                         <Button variant="outline" class="w-full">
                             <MonitorSmartphone class="mr-2 h-4 w-4" />
-                            Upload
+                            上传
                         </Button>
                     </a>
+                    <a
+                        href="/dashboard/credits"
+                        onclick={() => (sheetOpen = false)}
+                    >
+                        <Button variant="outline" class="w-full">
+                            <Coins class="mr-2 h-4 w-4" />
+                            积分
+                        </Button>
+                    </a>
+                    {#if isAdmin}
+                        <Separator class="my-3" />
+                        <p class="text-muted-foreground px-2 text-xs font-medium uppercase">管理</p>
+                        <a
+                            href="/dashboard/admin/packages"
+                            onclick={() => (sheetOpen = false)}
+                        >
+                            <Button variant="outline" class="w-full">
+                                <Package class="mr-2 h-4 w-4" />
+                                套餐管理
+                            </Button>
+                        </a>
+                        <a
+                            href="/dashboard/admin/codes"
+                            onclick={() => (sheetOpen = false)}
+                        >
+                            <Button variant="outline" class="w-full">
+                                <Ticket class="mr-2 h-4 w-4" />
+                                兑换码管理
+                            </Button>
+                        </a>
+                    {/if}
                     <Separator class="my-3" />
                     <a
                         href="/dashboard/settings"
@@ -67,7 +103,7 @@
                     >
                         <Button variant="outline" class="w-full">
                             <GitBranch class="mr-2 h-4 w-4" />
-                            Settings
+                            设置
                         </Button>
                     </a>
                 </div>
