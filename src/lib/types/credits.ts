@@ -2,6 +2,7 @@ export interface CreditPackage {
     id: string;
     name: string;
     credits: number;
+    price: number;
     description: string | null;
     isActive: boolean;
     createdAt: string;

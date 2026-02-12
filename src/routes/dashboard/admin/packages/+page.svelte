@@ -19,6 +19,7 @@
     let editing = $state<CreditPackage | null>(null);
     let formName = $state("");
     let formCredits = $state("");
+    let formPrice = $state("");
     let formDescription = $state("");
     let submitting = $state(false);
 
@@ -41,6 +42,7 @@
         editing = null;
         formName = "";
         formCredits = "";
+        formPrice = "";
         formDescription = "";
         dialogOpen = true;
     }
@@ -49,6 +51,7 @@
         editing = pkg;
         formName = pkg.name;
         formCredits = String(pkg.credits);
+        formPrice = String(pkg.price);
         formDescription = pkg.description ?? "";
         dialogOpen = true;
     }
@@ -63,6 +66,11 @@
             toast.error("积分数量必须为正整数");
             return;
         }
+        const price = parseInt(formPrice, 10);
+        if (isNaN(price) || price < 0) {
+            toast.error("价格必须为非负整数（单位：分）");
+            return;
+        }
         submitting = true;
         try {
             if (editing) {
@@ -72,6 +80,7 @@
                     body: JSON.stringify({
                         name: formName.trim(),
                         credits,
+                        price,
                         description: formDescription.trim() || null,
                     }),
                 });
@@ -88,6 +97,7 @@
                     body: JSON.stringify({
                         name: formName.trim(),
                         credits,
+                        price,
                         description: formDescription.trim() || undefined,
                     }),
                 });
@@ -174,6 +184,7 @@
                             <Table.Row>
                                 <Table.Head>名称</Table.Head>
                                 <Table.Head>积分</Table.Head>
+                                <Table.Head>价格</Table.Head>
                                 <Table.Head class="hidden md:table-cell">描述</Table.Head>
                                 <Table.Head>状态</Table.Head>
                                 <Table.Head class="hidden sm:table-cell">创建时间</Table.Head>
@@ -185,6 +196,7 @@
                                 <Table.Row class={pkg.isActive ? "" : "opacity-60"}>
                                     <Table.Cell class="font-medium">{pkg.name}</Table.Cell>
                                     <Table.Cell>{pkg.credits.toLocaleString()}</Table.Cell>
+                                    <Table.Cell>¥{(pkg.price / 100).toFixed(2)}</Table.Cell>
                                     <Table.Cell class="text-muted-foreground hidden max-w-48 truncate md:table-cell">
                                         {pkg.description ?? "-"}
                                     </Table.Cell>
@@ -252,6 +264,17 @@
                     bind:value={formCredits}
                     placeholder="例如：100"
                     min="1"
+                    disabled={submitting}
+                />
+            </div>
+            <div class="space-y-2">
+                <Label for="pkg-price">价格（分）</Label>
+                <Input
+                    id="pkg-price"
+                    type="number"
+                    bind:value={formPrice}
+                    placeholder="例如：990 表示 ¥9.90"
+                    min="0"
                     disabled={submitting}
                 />
             </div>

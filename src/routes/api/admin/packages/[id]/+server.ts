@@ -14,8 +14,8 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
         return json({ error: '无效的请求格式' }, { status: 400 });
     }
 
-    const { name, credits, description, isActive } = body as {
-        name?: string; credits?: number; description?: string; isActive?: boolean;
+    const { name, credits, price, description, isActive } = body as {
+        name?: string; credits?: number; price?: number; description?: string; isActive?: boolean;
     };
 
     const update: Record<string, unknown> = {};
@@ -30,6 +30,12 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
             return json({ error: '积分数量必须为正整数' }, { status: 400 });
         }
         update.credits = credits;
+    }
+    if (price !== undefined) {
+        if (typeof price !== 'number' || price < 0 || !Number.isInteger(price)) {
+            return json({ error: '价格必须为非负整数（单位：分）' }, { status: 400 });
+        }
+        update.price = price;
     }
     if (description !== undefined) update.description = description?.trim() ?? null;
     if (isActive !== undefined) update.isActive = isActive;

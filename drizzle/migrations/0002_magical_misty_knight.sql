@@ -1,0 +1,1 @@
+ALTER TABLE "credit_package" ADD COLUMN "price" integer DEFAULT 0 NOT NULL;

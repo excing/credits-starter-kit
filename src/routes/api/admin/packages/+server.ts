@@ -23,8 +23,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         return json({ error: '无效的请求格式' }, { status: 400 });
     }
 
-    const { name, credits, description } = body as {
-        name?: string; credits?: number; description?: string;
+    const { name, credits, price, description } = body as {
+        name?: string; credits?: number; price?: number; description?: string;
     };
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -33,10 +33,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     if (!credits || typeof credits !== 'number' || credits <= 0 || !Number.isInteger(credits)) {
         return json({ error: '积分数量必须为正整数' }, { status: 400 });
     }
+    if (price === undefined || price === null || typeof price !== 'number' || price < 0 || !Number.isInteger(price)) {
+        return json({ error: '价格必须为非负整数（单位：分）' }, { status: 400 });
+    }
 
     const pkg = await createPackage({
         name: name.trim(),
         credits,
+        price,
         description: description?.trim(),
     });
     return json({ package: pkg }, { status: 201 });

@@ -6,12 +6,14 @@ import { randomUUID } from 'crypto';
 export interface CreatePackageInput {
     name: string;
     credits: number;
+    price: number;
     description?: string;
 }
 
 export interface UpdatePackageInput {
     name?: string;
     credits?: number;
+    price?: number;
     description?: string | null;
     isActive?: boolean;
 }
@@ -22,6 +24,7 @@ export async function createPackage(input: CreatePackageInput) {
         id,
         name: input.name,
         credits: input.credits,
+        price: input.price,
         description: input.description ?? null,
     }).returning();
     return pkg;

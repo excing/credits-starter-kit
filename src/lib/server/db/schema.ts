@@ -80,6 +80,7 @@ export const creditPackage = pgTable('credit_package', {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     credits: integer('credits').notNull(),
+    price: integer('price').notNull().default(0),
     description: text('description'),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at').notNull().defaultNow(),
